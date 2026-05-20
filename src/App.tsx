@@ -1758,7 +1758,7 @@ export default function App() {
                     </div>
                     <div>
                       <label className="input-label">RG Responsable</label>
-                      <select required className="select-field" value={rutaForm.representante_general_id} onChange={e => setRutaForm({...rutaForm, representante_general_id: e.target.value})}>
+                      <select className="select-field" value={rutaForm.representante_general_id} onChange={e => setRutaForm({...rutaForm, representante_general_id: e.target.value})}>
                         <option value="">Seleccionar...</option>
                         {[...representantesGenerales].sort((a,b) => a.nombre.localeCompare(b.nombre)).map(rg => <option key={rg.id} value={rg.id}>{rg.nombre} {rg.apellido_paterno}</option>)}
                       </select>
