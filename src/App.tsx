@@ -233,6 +233,9 @@ export default function App() {
   const fetchData = async () => {
     if (!currentUser) return;
     setIsLoading(true);
+    toast.loading('Cargando datos...', { id: 'fetch' });
+
+    let loadedCount = { rg: 0, rc: 0 };
 
     try {
       // 1. Cargar Usuarios (Solo si es ADMIN la política lo permitirá)
@@ -264,6 +267,7 @@ export default function App() {
       let rcData = rcRes.data || [];
       let rutasData = rutasRes.data || [];
       let casData = casRes.data || [];
+      loadedCount = { rg: rgData.length, rc: rcData.length };
 
       const userMunicipio = (currentUser as any)?.municipio;
       if (userMunicipio && currentUser?.rol !== 'ADMIN') {
@@ -282,8 +286,10 @@ export default function App() {
       setCasillas(casData);
     } catch (error: any) {
       console.error("Error fetching data:", error);
+      toast.error('Error al cargar datos: ' + (error?.message || ''), { id: 'fetch' });
     } finally {
       setIsLoading(false);
+      toast.dismiss('fetch');
     }
   };
 
@@ -332,6 +338,246 @@ export default function App() {
       setShowUserPassword(false);
     }
   }, [editingRutaId]);
+
+  // --- Handlers RG ---
+  const handleEditRg = (rg: any) => {
+    setEditingRgId(rg.id);
+    setRgForm({
+      nombre: rg.nombre, apellido_paterno: rg.apellido_paterno, apellido_materno: rg.apellido_materno || '',
+      clave_elector: rg.clave_elector, numero_credencial: rg.numero_credencial || '', cic: rg.cic || '',
+      municipio_id: String(rg.municipio_id || rg.seccion_id || ''),
+      df_id: String(rg.df_id || ''), dl_id: String(rg.dl_id || ''), seccion_id: String(rg.seccion_id || ''),
+      credencial_vigente: rg.credencial_vigente, es_militante: rg.es_militante,
+      calle: rg.calle || '', num_ext: rg.num_ext || '', num_int: rg.num_int || '', colonia: rg.colonia || '',
+      codigo_postal: rg.codigo_postal || '', telefono: rg.telefono || '', correo_electronico: rg.correo_electronico || '',
+      autoriza_propaganda: rg.autoriza_propaganda, tipo_propaganda: rg.tipo_propaganda || 'Ninguno', firma_capturada: rg.firma_capturada || false
+    });
+    setActiveTab('generales');
+  };
+
+  const handleDeleteRg = async (id: number) => {
+    if (!confirm('¿Seguro que deseas eliminar este RG?')) return;
+    try {
+      const { error } = await sheetsClient.from('rg').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('RG eliminado');
+      fetchData();
+    } catch (error: any) {
+      toast.error('Error al eliminar RG: ' + (error?.message || ''));
+    }
+  };
+
+  const handleSaveRg = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rgForm.clave_elector || rgForm.clave_elector.length !== 18) {
+      toast.error('Debes validar una clave de elector de 18 caracteres');
+      return;
+    }
+    try {
+      const { municipio_id, ...payload } = rgForm;
+      const dataToSave = {
+        ...payload,
+        df_id: parseInt(payload.df_id), dl_id: parseInt(payload.dl_id),
+        seccion_id: parseInt(payload.seccion_id) || 0, capturista_id: 1
+      };
+      if (editingRgId) {
+        await sheetsClient.rpc('save_rg_secure', { p_id: editingRgId, p_payload: dataToSave });
+        toast.success('RG actualizado');
+      } else {
+        await sheetsClient.rpc('save_rg_secure', { p_id: null, p_payload: dataToSave });
+        toast.success('RG registrado');
+      }
+      setEditingRgId(null); setActiveTab('listado_rg'); fetchData();
+    } catch (error: any) {
+      toast.error('Error: ' + (error?.message || ''));
+    }
+  };
+
+  // --- Handlers RC ---
+  const handleEditRc = (rc: any) => {
+    setEditingRcId(rc.id);
+    setRcForm({
+      nombre: rc.nombre, apellido_paterno: rc.apellido_paterno, apellido_materno: rc.apellido_materno || '',
+      clave_elector: rc.clave_elector, numero_credencial: rc.numero_credencial || '', cic: rc.cic || '',
+      municipio_id: String(rc.municipio_id || ''),
+      df_id: String(rc.df_id || ''), dl_id: String(rc.dl_id || ''), seccion_id: String(rc.seccion_id || ''),
+      casilla_id: String(rc.casilla_id || ''), tipo_nombramiento: rc.tipo_nombramiento || 'Propietario',
+      credencial_vigente: rc.credencial_vigente, es_militante: rc.es_militante,
+      calle: rc.calle || '', num_ext: rc.num_ext || '', num_int: rc.num_int || '', colonia: rc.colonia || '',
+      codigo_postal: rc.codigo_postal || '', telefono: rc.telefono || '', correo_electronico: rc.correo_electronico || '',
+      autoriza_propaganda: rc.autoriza_propaganda, tipo_propaganda: rc.tipo_propaganda || 'Ninguno', firma_capturada: rc.firma_capturada || false
+    });
+    setActiveTab('casilla');
+  };
+
+  const handleDeleteRc = async (id: number) => {
+    if (!confirm('¿Seguro que deseas eliminar este RC?')) return;
+    try {
+      const { error } = await sheetsClient.from('rc').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('RC eliminado');
+      fetchData();
+    } catch (error: any) {
+      toast.error('Error al eliminar RC: ' + (error?.message || ''));
+    }
+  };
+
+  const handleSaveRc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rcForm.clave_elector || rcForm.clave_elector.length !== 18) {
+      toast.error('Debes validar una clave de elector de 18 caracteres');
+      return;
+    }
+    try {
+      const { municipio_id, ...payload } = rcForm;
+      const dataToSave = {
+        ...payload, casilla_id: parseInt(payload.casilla_id) || null,
+        df_id: parseInt(payload.df_id), dl_id: parseInt(payload.dl_id),
+        seccion_id: parseInt(payload.seccion_id) || 0, capturista_id: 1
+      };
+      if (editingRcId) {
+        await sheetsClient.rpc('save_rc_secure', { p_id: editingRcId, p_payload: dataToSave });
+        toast.success('RC actualizado');
+      } else {
+        await sheetsClient.rpc('save_rc_secure', { p_id: null, p_payload: dataToSave });
+        toast.success('RC registrado');
+      }
+      setEditingRcId(null); setActiveTab('listado_rc'); fetchData();
+    } catch (error: any) {
+      toast.error('Error: ' + (error?.message || ''));
+    }
+  };
+
+  // --- Handlers Casillas ---
+  const handleEditCasilla = (cas: any) => {
+    setEditingCasillaIntId(cas.casilla_id);
+    setCasillaMgmtForm({
+      casilla_id: String(cas.casilla_id || ''),
+      casilla: cas.casilla || '',
+      df_id: cas.df ? String(cas.df) : '',
+      dl_id: cas.dl ? String(cas.dl) : '',
+      municipio_id: cas.municipio ? String(cas.municipio) : '',
+      ubicaci\u00f3n: cas.ubicaci\u00f3n || ''
+    });
+  };
+
+  const handleDeleteCasilla = async (casilla_id: number) => {
+    if (!confirm('¿Seguro que deseas eliminar esta casilla?')) return;
+    try {
+      const { error } = await sheetsClient.from('casillas').delete().eq('casilla_id', casilla_id);
+      if (error) throw error;
+      toast.success('Casilla eliminada');
+      fetchData();
+    } catch (error: any) {
+      toast.error('Error al eliminar: ' + (error?.message || ''));
+    }
+  };
+
+  const handleSaveCasilla = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const dataToSave = {
+        casilla: casillaMgmtForm.casilla,
+        df: casillaMgmtForm.df_id ? parseInt(casillaMgmtForm.df_id) : null,
+        dl: casillaMgmtForm.dl_id ? parseInt(casillaMgmtForm.dl_id) : null,
+        municipio: casillaMgmtForm.municipio_id ? parseInt(casillaMgmtForm.municipio_id) : null,
+        ubicaci\u00f3n: casillaMgmtForm.ubicaci\u00f3n ? casillaMgmtForm.ubicaci\u00f3n.toUpperCase() : null,
+        capturista_id: 1
+      };
+      await sheetsClient.rpc('save_casilla_secure', { p_id: editingCasillaIntId, p_payload: dataToSave });
+      toast.success(editingCasillaIntId ? 'Casilla actualizada' : 'Casilla registrada');
+      setEditingCasillaIntId(null);
+      setCasillaMgmtForm({ casilla_id: '', casilla: '', df_id: '', dl_id: '', municipio_id: '', ubicaci\u00f3n: '' });
+      setActiveTab('casillas_list'); fetchData();
+    } catch (error: any) {
+      toast.error('Error: ' + (error?.message || ''));
+    }
+  };
+
+  // --- Handlers Rutas ---
+  const handleEditRuta = (ruta: any) => {
+    setEditingRutaId(ruta.id);
+    setRutaForm({
+      nombre_ruta: ruta.nombre_ruta,
+      representante_general_id: String(ruta.representante_general_id || ''),
+      df_id: ruta.df_id ? String(ruta.df_id) : '',
+      dl_id: ruta.dl_id ? String(ruta.dl_id) : '',
+      municipio_id: ruta.municipio_id ? String(ruta.municipio_id) : '',
+      casillas_asignada: (ruta.casillas_asignada || []) as number[]
+    });
+    setActiveTab('rutas_form');
+  };
+
+  const handleDeleteRuta = async (id: number) => {
+    if (!confirm('¿Seguro que deseas eliminar esta ruta?')) return;
+    try {
+      const { error } = await sheetsClient.from('rutas').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Ruta eliminada');
+      fetchData();
+    } catch (error: any) {
+      toast.error('Error al eliminar ruta: ' + (error?.message || ''));
+    }
+  };
+
+  const handleSaveRuta = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const dataToSave = {
+        nombre_ruta: rutaForm.nombre_ruta,
+        df_id: rutaForm.df_id ? parseInt(rutaForm.df_id) : null,
+        dl_id: parseInt(rutaForm.dl_id),
+        representante_general_id: rutaForm.representante_general_id ? parseInt(rutaForm.representante_general_id) : null,
+        municipio_id: rutaForm.municipio_id ? parseInt(rutaForm.municipio_id) : null,
+        casillas_asignada: rutaForm.casillas_asignada,
+        capturista_id: 1
+      };
+      if (editingRutaId) {
+        await sheetsClient.rpc('save_ruta_secure', { p_id: editingRutaId, p_payload: dataToSave });
+        toast.success('Ruta actualizada');
+      } else {
+        await sheetsClient.rpc('save_ruta_secure', { p_id: null, p_payload: dataToSave });
+        toast.success('Ruta registrada');
+      }
+      setEditingRutaId(null); setActiveTab('rutas_list'); fetchData();
+    } catch (error: any) {
+      toast.error('Error: ' + (error?.message || ''));
+    }
+  };
+
+  // --- Handler Usuarios ---
+  const handleSaveUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userForm.usuario || (!editingUserId && !userForm.password)) {
+      toast.error('Usuario y contraseña requeridos');
+      return;
+    }
+    try {
+      if (editingUserId) {
+        const { error } = await sheetsClient.from('usuarios').update({
+          usuario: userForm.usuario.toLowerCase().trim(),
+          rol: userForm.rol,
+          nombre_completo: userForm.nombre_completo || null,
+          municipio: userForm.municipio || null
+        }).eq('id', editingUserId);
+        if (error) throw error;
+      } else {
+        const { error } = await sheetsClient.rpc('save_user', {
+          p_id: 0, p_usuario: userForm.usuario.toLowerCase().trim(),
+          p_password: userForm.password, p_rol: userForm.rol,
+          p_nombre_completo: userForm.nombre_completo || '',
+          p_municipio: userForm.municipio || null
+        });
+        if (error) throw error;
+      }
+      toast.success(editingUserId ? 'Usuario actualizado' : 'Usuario creado');
+      setEditingUserId(null);
+      setUserForm({ usuario: '', nombre_completo: '', password: '', rol: 'CAPTURISTA', municipio: '' });
+      fetchData();
+    } catch (error: any) {
+      toast.error('Error: ' + (error?.message || ''));
+    }
+  };
 
   const handleEditUser = (u: UsuarioManual) => {
     setEditingUserId(u.id);
@@ -1857,6 +2103,7 @@ export default function App() {
                         <th>Correo</th>
                         <th>Municipio</th>
                         <th>Rol</th>
+                        <th className="text-center">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1868,6 +2115,12 @@ export default function App() {
                           <td><span className="text-sm text-surface-600">{u.correo || '—'}</span></td>
                           <td><span className="text-sm text-surface-600">{municipios.find(m => String(m.id) === String(u.municipio))?.municipio || u.municipio || '—'}</span></td>
                           <td><span className={`text-xs font-bold px-2 py-1 rounded ${u.rol === '1' || u.rol === 'ADMIN' ? 'bg-inst-100 text-inst-700' : 'bg-surface-100 text-surface-500'}`}>{u.rol}</span></td>
+                          <td className="text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button onClick={() => { handleEditUser(u); handleTabClick('usuarios_mgmt'); }} className="btn-icon" title="Editar"><Edit2 className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteUser(u.id)} className={`btn-icon hover:!text-danger-600 hover:!bg-danger-50 ${u.id === currentUser?.id ? 'opacity-20 cursor-not-allowed' : ''}`} disabled={u.id === currentUser?.id} title={u.id === currentUser?.id ? "No puedes eliminarte a ti mismo" : "Eliminar"}><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -2187,6 +2440,9 @@ function Sidebar({
               <span className="w-1.5 h-1.5 rounded-full bg-success-500"></span> En línea
             </p>
           </div>
+          <button onClick={async () => { const ok = await sheetsClient.connectGoogle(); if (ok) toast.success('Google conectado'); else toast.error('Error al conectar Google'); }} className="btn-icon" title="Conectar Google para guardar datos">
+            <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          </button>
           <button onClick={onLogout} className="btn-icon" title="Cerrar Sesión">
             <LogOut className="w-4 h-4" />
           </button>
