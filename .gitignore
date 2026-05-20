@@ -40,9 +40,11 @@ dist-ssr
 !src/**/*.ts
 !src/**/*.tsx
 !src/**/*.js
+!api/**/*.js
 !backend/**/*.js
 !backend/package.json
 !backend/package-lock.json
+!server.js
 !vite.config.ts
 !package.json
 !package-lock.json
