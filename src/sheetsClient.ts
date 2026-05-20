@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
 
-const SPREADSHEET_ID = import.meta.env.VITE_SPREADSHEET_ID || '16Xkow8EIvGtgiKS9smrHJmr35Ogq5wEvQVHOtxbAqwo';
-const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || 'AIzaSyDDEx2TV3j_n0lCYRwON1jt8Bizi8sY_UE';
+// Las llaves SPREADSHEET_ID y API_KEY se han migrado al backend (.env) por seguridad.
 const CLIENT_ID = '231708164370-ct7ainjigif34dngi1o23of8uv7di1ig.apps.googleusercontent.com';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
@@ -113,9 +112,7 @@ function transformKeysToSnakeCase(obj: any): any {
   return newObj;
 }
 
-function delay(ms: number) {
-  return new Promise(r => setTimeout(r, ms));
-}
+// Funciones utilitarias limpiadas
 
 async function saveRecordInSheet(sheetName: string, idField: string, idVal: number | null, payload: any): Promise<any> {
   const data = await apiRequest('GET', `values/${sheetName}!A1:Z5000?alt=json`);
@@ -349,7 +346,7 @@ function createQueryBuilder(tableName: string) {
   };
 
   const builder: any = {
-    select(columns?: string) { queryAction = 'select'; return builder; },
+    select(_columns?: string) { queryAction = 'select'; return builder; },
     eq(field: string, value: any) { filters.push({ field, value }); return builder; },
     single() { singleResult = true; return builder; },
     delete() { queryAction = 'delete'; return builder; },
@@ -413,7 +410,7 @@ export const sheetsClient = {
       }
     },
     signOut: async () => { oauthToken = null; return { error: null }; },
-    onAuthStateChange: (callback: (event: string, session: any) => void) => {
+    onAuthStateChange: (_callback: (event: string, session: any) => void) => {
       return { data: { subscription: { unsubscribe: () => {} } } };
     },
     getSession: async () => { return { data: { session: null }, error: null }; }

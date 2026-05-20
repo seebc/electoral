@@ -6,7 +6,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 
-dotenv.config();
+const path = require('path');
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -121,8 +122,8 @@ const verifyToken = (req, res, next) => {
 // ==========================================
 app.use('/api/sheets', apiLimiter, verifyToken);
 
-app.all('/api/sheets/*', async (req, res) => {
-  const urlPath = req.params[0];
+app.use('/api/sheets', async (req, res) => {
+  const urlPath = req.path.replace(/^\//, '');
   
   // Seguridad: Bloquear acceso a la tabla USUARIOS si no es administrador (rol == 1)
   if (urlPath.toUpperCase().includes('USUARIOS')) {
