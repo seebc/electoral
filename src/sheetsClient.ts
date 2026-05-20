@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 
 // Las llaves SPREADSHEET_ID y API_KEY se han migrado al backend (.env) por seguridad.
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 const CLIENT_ID = '231708164370-ct7ainjigif34dngi1o23of8uv7di1ig.apps.googleusercontent.com';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
@@ -50,7 +51,7 @@ async function apiRequest(method: string, urlPath: string, body?: any): Promise<
   const useToken = method !== 'GET' || !!oauthToken;
   
   // Apuntar al backend en lugar de directo a Google Sheets
-  const url = `http://localhost:4000/api/sheets/${urlPath}`;
+  const url = `${BACKEND_URL}/api/sheets/${urlPath}`;
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
@@ -384,7 +385,7 @@ export const sheetsClient = {
   auth: {
     signInWithPassword: async (credentials: { email: string; password: string }) => {
       try {
-        const res = await fetch('http://localhost:4000/api/auth/login', {
+        const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(credentials)
@@ -419,7 +420,7 @@ export const sheetsClient = {
   rpc: async (functionName: string, params: any): Promise<any> => {
     if (functionName === 'validate_login') {
       try {
-        const res = await fetch('http://localhost:4000/api/auth/login', {
+        const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: params.p_usuario, password: params.p_contrasena })
