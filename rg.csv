@@ -1,0 +1,6 @@
+id,df_id,dl_id,clave_elector,numero_credencial,cic,seccion_id,credencial_vigente,es_militante,nombre,apellido_paterno,apellido_materno,calle,num_ext,num_int,colonia,codigo_postal,telefono,correo_electronico,autoriza_propaganda,tipo_propaganda,firma_capturada,capturado_por,capturista_id
+1,1,2,RSLPJN70122002H901,1234567898745,1234567890,455,true,false,JUAN FRANCISCO,RASCON,LEPE,ALFARAZ,3595,,RESIDENCIAL SEVILLA,21378,6864333453,fcorascon@outlook.com,true,Lona,true,fcorascon,
+2,3,17,RSLPJN80122002M904,1234567898745,1234567890,222,true,true,FRANCISCA,LEPE,RASCON,BAHIA SAN RAFAEL,388,,POPULAR 89,21255,6861136282,CORREO@MICORREO.COM.MX,true,Ninguno,false,,
+3,2,4,ALGRRB90112102H400,1234567898745,1234567891,426,true,true,ROBERTO,ALVARADO,GUERRA,LA GALATEA,551,,EL CAMPANARIO,,6861235468,robertoalv@gmail.com,true,Pinta de Barda,true,,1
+4,1,1,RSCNFR80010101H100,,,211,true,false,AUDITOR,TEST,,,,,,,6861234567,test@seebc.mx,false,Ninguno,false,,1
+5,1,1,TEST12345678901234,12345678,123,42,true,false,JUAN,PEREZ,LOPEZ,CALLE 1,123,,CENTRO,,6641234567,test@test.com,false,Ninguno,false,,1

@@ -1,0 +1,5 @@
+id,df_id,dl_id,casilla_id,tipo_nombramiento,clave_elector,numero_credencial,cic,seccion_id,credencial_vigente,es_militante,nombre,apellido_paterno,apellido_materno,calle,num_ext,num_int,colonia,codigo_postal,telefono,correo_electronico,autoriza_propaganda,tipo_propaganda,firma_capturada,capturado_por,capturista_id
+1,1,2,100,Propietario,RSVLFR01100402H400,1234567891234,1234567891,2184,true,false,francisco,rascon,valenzuela,alfaraz,3595,,residencial sevilla,21378,6864333453,bboctubre@gmail.com,true,Lona,false,,1
+2,2,4,536,Propietario,ALGRRB86112226H400,0346072821827,2492386569,217,true,true,ROBERTO,ALVARADO,GUERRA,"LA GALATEA ",61,,EL CAMPANARIO,21380,,rag_lex@hotmail.com,true,Pinta de Barda,false,,
+3,7,15,1,Propietario,TEST09876543214321,87654321,321,1,true,false,PEDRO,GARCIA,SANCHEZ,CALLE 2,456,,NORTE,,6649876543,rc@test.com,false,Ninguno,false,,1
+4,2,3,551,PROPIETARIO 1,ABCDEF90122002H900,1234567893214,1234567890,226,true,false,MARITZA,OLIVAS,ORTEGA,DE LOS DESEOS,4185,,LA VILLA RESIDENCIAL,21040,6864333453,micorreo@mail.com,false,Ninguno,false,,1

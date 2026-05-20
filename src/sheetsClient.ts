@@ -49,11 +49,19 @@ function getTokenClient(): Promise<string> {
 
 async function apiRequest(method: string, urlPath: string, body?: any): Promise<any> {
   const useToken = method !== 'GET' || !!oauthToken;
-  const separator = urlPath.includes('?') ? '&' : '?';
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/${urlPath}${useToken ? '' : `${separator}key=${API_KEY}`}`;
+  
+  // Apuntar al backend en lugar de directo a Google Sheets
+  const url = `http://localhost:4000/api/sheets/${urlPath}`;
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
+  // Incluir el JWT de nuestra app
+  const appToken = localStorage.getItem('seebc_token');
+  if (appToken) {
+    headers['X-App-Authorization'] = appToken;
+  }
+
+  // Incluir el token de OAuth de Google para operaciones de escritura
   if (useToken) {
     try {
       const token = await getTokenClient();
@@ -67,7 +75,7 @@ async function apiRequest(method: string, urlPath: string, body?: any): Promise<
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`Google API error ${res.status}: ${errText}`);
+    throw new Error(`Backend API error ${res.status}: ${errText}`);
   }
 
   return res.json();
@@ -378,33 +386,31 @@ export const sheetsClient = {
 
   auth: {
     signInWithPassword: async (credentials: { email: string; password: string }) => {
-      await delay(800);
-      const { data: usuarios } = await sheetsClient.from('usuarios').select();
-      const username = credentials.email.split('@')[0];
-      const user = (usuarios as any[])?.find(
-        (u: any) => String(u.usuario).toLowerCase() === username.toLowerCase()
-      );
-      if (!user) {
-        return { data: { user: null, session: null }, error: { message: 'Credenciales no válidas.' } as any };
+      try {
+        const res = await fetch('http://localhost:4000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(credentials)
+        });
+        
+        const data = await res.json();
+        if (!res.ok) {
+          return { data: { user: null, session: null }, error: { message: data.error || 'Credenciales no válidas.' } as any };
+        }
+        
+        // Guardar el JWT Token
+        localStorage.setItem('seebc_token', data.token);
+        
+        return {
+          data: {
+            user: { id: data.user.id, email: data.user.usuario, user_metadata: { usuario: data.user.usuario, rol: data.user.rol }, ...data.user },
+            session: { access_token: data.token, refresh_token: '', expires_at: 0, expires_in: 0, token_type: 'bearer' }
+          },
+          error: null
+        };
+      } catch (e) {
+        return { data: { user: null, session: null }, error: { message: 'Error al conectar con el servidor de autenticación.' } as any };
       }
-
-      // Validación segura con bcrypt
-      const isMatch = user.contrasena && (
-        user.contrasena.startsWith('$2')
-          ? bcrypt.compareSync(credentials.password, user.contrasena)
-          : user.contrasena === credentials.password
-      );
-      if (!isMatch) {
-        return { data: { user: null, session: null }, error: { message: 'Credenciales no válidas.' } as any };
-      }
-
-      return {
-        data: {
-          user: { id: user.user_id || user.id, email: username, user_metadata: { usuario: user.usuario, rol: user.rol } },
-          session: { access_token: user.user_id || user.id, refresh_token: '', expires_at: 0, expires_in: 0, token_type: 'bearer' }
-        },
-        error: null
-      };
     },
     signOut: async () => { oauthToken = null; return { error: null }; },
     onAuthStateChange: (callback: (event: string, session: any) => void) => {
@@ -415,27 +421,21 @@ export const sheetsClient = {
 
   rpc: async (functionName: string, params: any): Promise<any> => {
     if (functionName === 'validate_login') {
-      await delay(800);
-      const { data: usuarios } = await sheetsClient.from('usuarios').select();
-      const user = (usuarios as any[])?.find(
-        (u: any) => String(u.usuario).toLowerCase() === String(params.p_usuario).toLowerCase()
-      );
-
-      // Validación segura con bcrypt
-      const isMatch = user && user.contrasena && (
-        user.contrasena.startsWith('$2')
-          ? bcrypt.compareSync(params.p_contrasena, user.contrasena)
-          : user.contrasena === params.p_contrasena
-      );
-
-      if (isMatch) {
-        return {
-          data: { id: user.id, usuario: user.usuario, nombre_completo: user.nombre_completo || user.usuario,
-            rol: user.rol || 'CAPTURISTA', user_id: user.user_id, municipio: user.municipio },
-          error: null
-        };
+      try {
+        const res = await fetch('http://localhost:4000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: params.p_usuario, password: params.p_contrasena })
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+          localStorage.setItem('seebc_token', data.token);
+          return { data: data.user, error: null };
+        }
+        return { data: null, error: { message: data.error || 'Credenciales no válidas.' } };
+      } catch (e) {
+        return { data: null, error: { message: 'Error al conectar con el servidor.' } };
       }
-      return { data: null, error: { message: 'Credenciales no válidas.' } };
     }
 
     if (functionName === 'save_rg_secure') {
