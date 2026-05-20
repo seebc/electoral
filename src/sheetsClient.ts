@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 
 const SPREADSHEET_ID = import.meta.env.VITE_SPREADSHEET_ID || '16Xkow8EIvGtgiKS9smrHJmr35Ogq5wEvQVHOtxbAqwo';
-const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || '';
+const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || 'AIzaSyDDEx2TV3j_n0lCYRwON1jt8Bizi8sY_UE';
 const CLIENT_ID = '231708164370-ct7ainjigif34dngi1o23of8uv7di1ig.apps.googleusercontent.com';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';

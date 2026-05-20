@@ -1803,7 +1803,7 @@ export default function App() {
                       <input
                         type="text"
                         placeholder="Buscar casilla por nombre..."
-                        className="input-field pl-10"
+                        className="input-field !pl-12"
                         value={casillaSearch}
                         onChange={(e) => setCasillaSearch(e.target.value)}
                       />
@@ -1988,7 +1988,7 @@ export default function App() {
                             <input 
                               type={showUserPassword ? 'text' : 'password'} 
                               required={!editingUserId}
-                              className="input-field pr-10" 
+                              className="input-field !pr-12" 
                               placeholder={editingUserId ? 'Nueva contraseña (opcional)' : 'Mínimo 6 caracteres'}
                               value={userForm.password} 
                               onChange={e => setUserForm({...userForm, password: e.target.value})} 
@@ -2551,7 +2551,7 @@ function Login({ onLoginSuccess }: { onLoginSuccess: (user: any) => void }) {
                   type="text"
                   required
                   placeholder="Nombre de usuario"
-                  className="input-field pl-11 h-12 relative z-10 bg-transparent rounded-none"
+                  className="input-field !pl-12 h-12 relative z-10 bg-transparent rounded-none"
                   value={usuario}
                   onChange={(e) => setUsuario(e.target.value)}
                   autoComplete="username"
@@ -2567,7 +2567,7 @@ function Login({ onLoginSuccess }: { onLoginSuccess: (user: any) => void }) {
                   type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
-                  className="input-field pl-11 pr-11 h-12 relative z-10 bg-transparent rounded-none"
+                  className="input-field !pl-12 !pr-12 h-12 relative z-10 bg-transparent rounded-none"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
