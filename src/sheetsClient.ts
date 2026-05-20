@@ -1,3 +1,5 @@
+import bcrypt from 'bcryptjs';
+
 const SPREADSHEET_ID = import.meta.env.VITE_SPREADSHEET_ID || '16Xkow8EIvGtgiKS9smrHJmr35Ogq5wEvQVHOtxbAqwo';
 const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || '';
 const CLIENT_ID = '231708164370-ct7ainjigif34dngi1o23of8uv7di1ig.apps.googleusercontent.com';
@@ -385,6 +387,17 @@ export const sheetsClient = {
       if (!user) {
         return { data: { user: null, session: null }, error: { message: 'Credenciales no válidas.' } as any };
       }
+
+      // Validación segura con bcrypt
+      const isMatch = user.contrasena && (
+        user.contrasena.startsWith('$2')
+          ? bcrypt.compareSync(credentials.password, user.contrasena)
+          : user.contrasena === credentials.password
+      );
+      if (!isMatch) {
+        return { data: { user: null, session: null }, error: { message: 'Credenciales no válidas.' } as any };
+      }
+
       return {
         data: {
           user: { id: user.user_id || user.id, email: username, user_metadata: { usuario: user.usuario, rol: user.rol } },
@@ -407,7 +420,15 @@ export const sheetsClient = {
       const user = (usuarios as any[])?.find(
         (u: any) => String(u.usuario).toLowerCase() === String(params.p_usuario).toLowerCase()
       );
-      if (user && user.contrasena === params.p_contrasena) {
+
+      // Validación segura con bcrypt
+      const isMatch = user && user.contrasena && (
+        user.contrasena.startsWith('$2')
+          ? bcrypt.compareSync(params.p_contrasena, user.contrasena)
+          : user.contrasena === params.p_contrasena
+      );
+
+      if (isMatch) {
         return {
           data: { id: user.id, usuario: user.usuario, nombre_completo: user.nombre_completo || user.usuario,
             rol: user.rol || 'CAPTURISTA', user_id: user.user_id, municipio: user.municipio },
@@ -455,9 +476,14 @@ export const sheetsClient = {
 
     if (functionName === 'save_user') {
       const p_id = params.p_id || null;
+      let hashedContrasena = params.p_password;
+      if (hashedContrasena && !hashedContrasena.startsWith('$2')) {
+        const salt = bcrypt.genSaltSync(6);
+        hashedContrasena = bcrypt.hashSync(hashedContrasena, salt);
+      }
       const payload = {
         usuario: params.p_usuario,
-        contrasena: params.p_password,
+        contrasena: hashedContrasena,
         rol: params.p_rol === 'ADMIN' ? '1' : '2',
         nombre_completo: params.p_nombre_completo,
         municipio: params.p_municipio,
