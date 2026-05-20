@@ -2467,9 +2467,8 @@ function Login({ onLoginSuccess }: { onLoginSuccess: (user: any) => void }) {
     setErrorMsg(null);
 
     try {
-      // 1. Intentar Login con Supabase Auth (Normal)
+      // 1. Intentar Login con el backend seguro
       const email = usuario.includes('@') ? usuario : `${usuario.toLowerCase().trim()}@seebc.com`;
-      let authSuccess = false;
 
       try {
         const { data: { user }, error: authError } = await sheetsClient.auth.signInWithPassword({
@@ -2478,40 +2477,47 @@ function Login({ onLoginSuccess }: { onLoginSuccess: (user: any) => void }) {
         });
 
         if (!authError && user) {
-          authSuccess = true;
-          const { data: profileData } = await sheetsClient
-            .from('usuarios')
-            .select('*')
-            .eq('user_id', user.id);
-          const profile = Array.isArray(profileData) ? profileData[0] : profileData;
-
-          if (profile) {
-            toast.success(`Bienvenido, ${profile.nombre_completo || profile.usuario}`);
-            onLoginSuccess(profile);
-            return;
-          }
-        }
-      } catch (authErr) {
-        console.warn('Auth engine unavailable, using secure fallback:', authErr);
-      }
-
-      // 2. FALLBACK SEGURO: Validación bcrypt via RPC en el servidor
-      if (!authSuccess) {
-        const { data: profile, error: rpcError } = await sheetsClient.rpc('validate_login', {
-          p_usuario: usuario.toLowerCase().trim(),
-          p_contrasena: password
-        });
-
-        if (rpcError || !profile) {
-          const delay = Math.floor(Math.random() * (1500 - 500 + 1)) + 500;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          throw new Error('Credenciales no válidas.');
+          // El backend ya devuelve todos los datos necesarios del usuario
+          const profile = {
+            id: user.id,
+            usuario: user.usuario || user.email,
+            rol: user.rol,
+            municipio: user.municipio,
+            nombre_completo: user.nombre_completo || user.usuario || user.email,
+            ...user
+          };
+          toast.success(`Bienvenido, ${profile.nombre_completo || profile.usuario}`);
+          onLoginSuccess(profile);
+          return;
         }
 
-        toast.success(`Bienvenido, ${profile.nombre_completo || profile.usuario}`);
-        onLoginSuccess(profile);
-        return;
+        if (authError) {
+          throw new Error(authError.message || 'Credenciales no válidas.');
+        }
+      } catch (authErr: any) {
+        // Si el error viene del servidor (credenciales incorrectas), propagarlo
+        if (authErr.message && authErr.message !== 'Credenciales no válidas.') {
+          console.warn('Auth engine unavailable, using secure fallback:', authErr);
+        } else {
+          throw authErr;
+        }
       }
+
+      // 2. FALLBACK: Validación via RPC
+      const { data: profile, error: rpcError } = await sheetsClient.rpc('validate_login', {
+        p_usuario: usuario.toLowerCase().trim(),
+        p_contrasena: password
+      });
+
+      if (rpcError || !profile) {
+        const delay = Math.floor(Math.random() * (1500 - 500 + 1)) + 500;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        throw new Error('Credenciales no válidas.');
+      }
+
+      toast.success(`Bienvenido, ${profile.nombre_completo || profile.usuario}`);
+      onLoginSuccess(profile);
+      return;
     } catch (err: any) {
       console.error('Login error:', err);
       setErrorMsg(err.message || 'Error al iniciar sesión');
